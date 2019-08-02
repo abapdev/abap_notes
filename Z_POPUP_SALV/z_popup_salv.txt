@@ -1,0 +1,33 @@
+*&---------------------------------------------------------------------*
+*& Report Z_POPUP_SALV
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_popup_salv.
+
+DATA: o_popup_alv TYPE REF TO cl_salv_table.
+DATA: lo_functions TYPE REF TO cl_salv_functions_list.
+DATA: lt_bid TYPE STANDARD TABLE OF zsm_t_bid.
+*
+SELECT * FROM zsm_t_bid
+  into table lt_bid
+  up to 10 rows.
+*
+  cl_salv_table=>factory(
+     IMPORTING
+       r_salv_table   = o_popup_alv
+    CHANGING
+      t_table        = lt_bid ).
+*
+  lo_functions = o_popup_alv->get_functions( ).
+  lo_functions->set_default( 'X' ).
+*
+* ALV as Popup
+  o_popup_alv->set_screen_popup(
+    start_column = 80
+    end_column   = 140
+    start_line   = 3
+    end_line     = 10 ).
+
+* Display
+  o_popup_alv->display( ).

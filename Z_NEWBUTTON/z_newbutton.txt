@@ -1,0 +1,57 @@
+*&---------------------------------------------------------------------*
+*& Report Z_NEWBUTTON
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_newbutton.
+
+tables: sscrfields.
+data: o_popup_alv type ref to cl_salv_table
+      , lo_functions type ref to cl_salv_functions_list
+      , lt_bid type standard table of zsm_t_bid
+      .
+
+*1. Селекционный экран
+selection-screen: function key 1.
+parameters p_param as checkbox.
+*2.  - задаем иконку и подпись
+initialization.
+  call function 'ICON_CREATE'
+    exporting
+      name                  = 'ICON_INFORMATION' "'ICON_EXECUTE_OBJECT'
+*     text                  = ''
+      info                  = text-003
+    importing
+      result                = sscrfields-functxt_01
+    exceptions
+      icon_not_found        = 1
+      outputfield_too_short = 2
+      others                = 3.
+
+* 3. добавляем обработку нажатия
+at selection-screen.
+  case sscrfields-ucomm.
+    when 'ONLI'.
+
+    when 'FC01'.
+      perform do_something.
+  endcase.
+
+form do_something.
+  select * from zsm_t_bid
+into table lt_bid
+up to 10 rows.
+  cl_salv_table=>factory(
+     importing
+       r_salv_table   = o_popup_alv
+    changing
+      t_table        = lt_bid ).
+  lo_functions = o_popup_alv->get_functions( ).
+  lo_functions->set_default( 'X' ).
+  o_popup_alv->set_screen_popup(
+    start_column = 80
+    end_column   = 140
+    start_line   = 3
+    end_line     = 10 ).
+  o_popup_alv->display( ).
+endform.

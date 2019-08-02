@@ -1,0 +1,34 @@
+*&---------------------------------------------------------------------*
+*& Report Z_CALLSTACK
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_callstack.
+DATA: t_abap_stack TYPE  abap_callstack,
+      t_sys_stack  TYPE  sys_callst.
+
+START-OF-SELECTION.
+
+  CALL FUNCTION 'SYSTEM_CALLSTACK'
+    IMPORTING
+      callstack    = t_abap_stack
+      et_callstack = t_sys_stack.
+
+  READ TABLE t_abap_stack into data(ls_stack)
+    WITH KEY mainprogram = 'Z_CALLSTACK'.   "Your FM name
+  IF sy-subrc = 0.
+    write: / 'Call from report', ls_stack-mainprogram.
+  ELSE.
+    write: / 'Solo call'.
+  ENDIF.
+***************************************************************
+* DO NOT WORK using NEW TASK,                                 *
+*                   Background Task,                          *
+*                   Update Task,                              *
+*                   RFC,                                      *
+*                   SUBMIT,                                   *
+*                   CALL TRANSACTION;                         *
+* this FM would only bring the current Program in Call Stack. *
+* only  CALL FUNCTION                                         *
+*   or  CALL METHOD                                           *
+***************************************************************

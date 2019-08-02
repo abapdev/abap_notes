@@ -1,0 +1,21 @@
+*&---------------------------------------------------------------------*
+*& Report Z_MACROS
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_macros.
+
+define show_alv.
+  DATA gr_table TYPE REF TO cl_salv_table.
+  DATA tmp_&1 TYPE TABLE OF &1.
+
+  SELECT * FROM &1 INTO TABLE tmp_&1.
+
+  CALL METHOD cl_salv_table=>factory
+  IMPORTING r_salv_table = gr_table
+  CHANGING  t_table      = tmp_&1[].
+
+  gr_table->display( ).
+end-of-definition.
+
+show_alv zsm_t_bid.

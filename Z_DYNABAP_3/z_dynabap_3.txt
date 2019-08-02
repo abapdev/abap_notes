@@ -1,0 +1,30 @@
+*&---------------------------------------------------------------------*
+*& Report Z_DYNABAP
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_dynabap_3.
+
+types: begin of t_protocol,
+         icon     type icon_d,
+         objtxt   type char70,
+         bapi_msg type bapi_msg,
+         msgty    type sy-msgty,
+       end of t_protocol.
+data gt_protocol type table of t_protocol.
+
+select * from zsm_t_bid into table @data(gt_bid).
+
+
+data(result_m) = |Выполнена обработка { sy-dbcnt } записей.|.
+data(result_t) = cond #( when sy-subrc = 0 then 'I'
+                          else 'E' ).
+
+data(lv_prog) =  |Z_PROTOCOL|.
+
+perform ('PROTOCOL_ADD_MESSAGE') in program (lv_prog) if found
+  tables  gt_protocol
+  using 'zsm_t_bid' result_m result_t.
+
+perform  ('PROTOCOL_SHOW') in program (lv_prog) if found
+  tables  gt_protocol.

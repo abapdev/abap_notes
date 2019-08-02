@@ -1,0 +1,41 @@
+*&---------------------------------------------------------------------*
+*& Report Z_WEBPAGE
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_webpage.
+
+INITIALIZATION.
+
+DATA: cl_html_container TYPE REF TO cl_gui_custom_container,
+      cl_htmlviewer     TYPE REF TO cl_gui_html_viewer.
+
+  CREATE OBJECT cl_html_container
+    EXPORTING
+      container_name = 'CONT'.
+
+  CREATE OBJECT cl_htmlviewer
+    EXPORTING
+      parent = cl_html_container.
+
+START-OF-SELECTION.
+
+  CALL SCREEN 0100.
+
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS '0100'.
+  SET TITLEBAR 'Web Page'.
+**write in pbo
+
+  CALL METHOD cl_htmlviewer->show_url
+    EXPORTING
+      url = 'http://www.google.com'.
+
+ENDMODULE.
+MODULE user_command_0100 INPUT.
+CASE sy-ucomm.
+  WHEN 'EXIT' OR 'BACK' OR 'CANCEL'.
+    LEAVE PROGRAM.
+  WHEN OTHERS.
+ENDCASE.
+ENDMODULE.

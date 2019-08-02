@@ -1,0 +1,74 @@
+*&---------------------------------------------------------------------*
+*& Report Z_CUR_RATE
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_cur_rate.
+
+INITIALIZATION.
+
+  TYPES: BEGIN OF ty_response,
+           line(50),
+         END OF ty_response.
+
+  DATA: lr_client       TYPE REF TO if_http_client,
+        l_response      TYPE string,
+        lv_datetext(10) TYPE c,
+        lt_response     TYPE TABLE OF ty_response.
+
+  DATA: lv_curr TYPE char10.
+
+  DATA lv_rate TYPE char10.
+
+
+  PARAMETERS: p_code TYPE tcurc-waers OBLIGATORY.
+
+
+START-OF-SELECTION.
+
+  SELECT SINGLE altwr
+    INTO @DATA(lv_code)
+    FROM tcurc
+    WHERE waers = @p_code.
+
+
+  PERFORM get_rate  USING lv_code  CHANGING lv_rate.
+
+END-OF-SELECTION.
+
+  CHECK lv_rate IS NOT INITIAL.
+
+  WRITE:/ p_code, '= ', lv_rate.
+
+FORM get_rate USING iv_code TYPE char3
+            CHANGING iv_curr TYPE char10.
+
+  CONCATENATE sy-datum(4) '/' sy-datum+4(2) '/' sy-datum+6(2) INTO lv_datetext.
+
+  DATA(lv_url) = |http://cbrates.rbc.ru/tsv/{ lv_code }/{ lv_datetext }.tsv|.
+
+  CALL METHOD cl_http_client=>create_by_url
+    EXPORTING
+      url    = lv_url
+    IMPORTING
+      client = lr_client.
+
+* Отправка запроса
+  CALL METHOD lr_client->send.
+
+* Получение ответа сервера
+  CALL METHOD lr_client->receive.
+
+  l_response = lr_client->response->get_cdata( ).
+
+* Закрытие соединения
+  CALL METHOD lr_client->close.
+
+  CHECK NOT l_response IS INITIAL AND NOT l_response CP '*404*'.
+
+  REPLACE ALL OCCURRENCES OF cl_abap_char_utilities=>newline IN l_response WITH ''.
+  CLEAR lt_response[].
+  SPLIT l_response AT cl_abap_char_utilities=>horizontal_tab INTO TABLE lt_response.
+
+  iv_curr = lt_response[ 2 ]-line.
+ENDFORM.

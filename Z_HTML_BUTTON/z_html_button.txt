@@ -1,0 +1,175 @@
+*&---------------------------------------------------------------------*
+*& Report Z_HTML_BUTTON
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_html_button.
+*----------------------------------------------------------------------*
+* Local Class Definition
+*----------------------------------------------------------------------*
+class lcl_report definition.
+*
+  public section.
+    data: lo_dock type ref to cl_gui_docking_container,
+          lo_cont type ref to cl_gui_container,
+          lo_html type ref to cl_gui_html_viewer.
+    methods:
+      generate_html_button,
+      build_html
+        returning value(rt_html) type  w3_htmltab,
+      on_sapevent
+                    for event sapevent of cl_gui_html_viewer
+        importing action          " Action from button
+                    frame
+                    getdata
+                    postdata
+                    query_table.    " Additional parameters
+*
+endclass.                    "lcl_report DEFINITION
+*
+*----------------------------------------------------------------------*
+* Local Class Implementation
+*----------------------------------------------------------------------*
+class lcl_report implementation.
+  method generate_html_button.
+*   local data
+    data: t_event_tab type cntl_simple_events.
+    data: ls_event like line of t_event_tab.
+    data: doc_url(80),
+          lt_html type table of w3_html.
+*
+*   Create a docking control at bottom
+    check lo_dock is initial.
+    create object lo_dock
+      exporting
+        repid = sy-cprog
+        dynnr = sy-dynnr
+        ratio = 80
+        "side  = cl_gui_docking_container=>dock_at_bottom
+        name  = 'DOCK_CONT'.
+    if sy-subrc <> 0.
+      message 'Error in the Docking control' type 'S'.
+      exit.
+    endif.
+*
+    create object lo_html
+      exporting
+        parent = lo_dock.
+    if sy-subrc ne 0.
+      message 'Error in the HTML control' type 'S'.
+      exit.
+    endif.
+*
+* Build HTML
+    lt_html = me->build_html( ).
+*
+* register event
+    ls_event-eventid = lo_html->m_id_sapevent.
+    ls_event-appl_event = 'x'.
+    append ls_event to t_event_tab.
+    lo_html->set_registered_events(
+        exporting
+           events = t_event_tab ).
+*
+    set handler me->on_sapevent
+                for lo_html.
+    lo_html->load_data( importing assigned_url = doc_url
+                          changing  data_table = lt_html ).
+*      lo_html->load_html_document(
+*           EXPORTING
+*                document_id  = lv_html_file_name
+*           IMPORTING
+*                assigned_url = doc_url
+*           EXCEPTIONS
+*                OTHERS       = 1 ).
+
+    lo_html->show_url( url = doc_url ).
+*
+    lo_html->set_ui_flag( lo_html->uiflag_no3dborder ).
+
+  endmethod.                    "generate_html_button
+*
+  method build_html.
+
+    define add_html.
+      APPEND &1 TO rt_html.
+    end-of-definition.
+
+    add_html:
+      '<html>',
+      '<style type="text/css">',
+      'HTML { overflow: auto; height: 100%;}',
+      'body{margin: 0;  padding: 150; background: white; }',
+      'input.fbutton{',
+      ' font-size:16px;',
+      ' font-weight:bold;',
+      ' width:170px;',
+      '	height:50px;',
+      ' background-color: orange',
+      '	border-style:double;',
+      '	cursor: pointer;}',
+      '</style>',
+      '<body>',
+      '<FORM name="zzhtmlbutton"',
+      '       method=post',
+      '       action=SAPEVENT:MY_BUTTON_1?PARAM1=Hello&PARAM2=*>',
+**      '<input type=submit name="TEST_BUTTON"',
+**      '      class="fbutton" value="Push Me!"',
+**      '      title="">',
+      '<input type="image" src="https://pbs.twimg.com/profile_images/2225441869/migoGroup_logo_400x400.png" alt="ÎÊ">',
+
+      '</form>',
+      '</body>',
+      '</html>'.
+
+  endmethod.                    "build_html
+*
+  method on_sapevent.
+    data: ls_query_table like line of query_table.
+    data: lv_string type string.
+    case action.
+      when 'MY_BUTTON_1'.
+        lv_string = 'HTML button says: '.
+        read table query_table into ls_query_table with key name = 'PARAM1'.
+        concatenate lv_string ls_query_table-value
+          into lv_string
+          separated by space.
+        read table query_table into ls_query_table with key name = 'PARAM2'.
+        concatenate lv_string sy-uname"ls_query_table-value
+          into lv_string
+          separated by space.
+        message lv_string type 'I'.
+**        call transaction 'Z_WEBPAGE'.
+    endcase.
+*
+  endmethod.                    "on_sapevent
+*
+endclass.                    "lcl_report IMPLEMENTATION
+*
+data: lo_report type ref to lcl_report.
+
+
+selection-screen: begin of block blk1 with frame title blk1.
+parameter: p_test as checkbox.
+selection-screen: end  of block blk1.
+
+initialization.
+  %_p_test_%_app_%-text = 'HTML Button test'.
+  create object lo_report.
+  lo_report->generate_html_button( ).
+
+
+  loop at screen.
+    case screen-name.
+      when 'BLK1'.
+        screen-invisible = 1.
+        screen-input = 0.
+        modify screen.
+      when 'P_TEST'.
+        screen-invisible = 1.
+        screen-input = 0.
+        modify screen.
+    endcase.
+  endloop.
+
+start-of-selection.

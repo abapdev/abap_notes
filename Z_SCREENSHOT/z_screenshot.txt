@@ -1,0 +1,74 @@
+*&---------------------------------------------------------------------*
+*& Report Z_SCREENSHOT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_screenshot.
+data:
+  gv_mime_type  type string,
+  gv_image      type xstring,
+  gt_tabimg     type standard table of x,
+  gv_path       type string,
+  gv_full_path  type string,
+  gv_useraction type i,
+  gv_name       type string.
+
+cl_gui_frontend_services=>get_screenshot(
+  importing
+    mime_type_str        = gv_mime_type
+    image                = gv_image
+  exceptions
+    access_denied        = 1
+    cntl_error           = 2
+    error_no_gui         = 3
+    not_supported_by_gui = 4
+    others               = 5
+).
+if sy-subrc <> 0.
+  message id sy-msgid type sy-msgty number sy-msgno
+             with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+endif.
+
+cl_gui_frontend_services=>file_save_dialog(
+  exporting
+    window_title              = 'Сохранить изображение'
+    default_extension         = 'png'
+    default_file_name         = 'screenshot'
+    prompt_on_overwrite       = 'X'
+  changing
+    path                      = gv_path
+    filename                  = gv_name
+    fullpath                  = gv_full_path
+    user_action               = gv_useraction
+  exceptions
+    cntl_error                = 1
+    error_no_gui              = 2
+    not_supported_by_gui      = 3
+    invalid_default_file_name = 4
+    others                    = 5
+).
+
+if sy-subrc <> 0.
+  message id sy-msgid type sy-msgty number sy-msgno
+             with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+endif.
+
+if gv_useraction = cl_gui_frontend_services=>action_ok.
+
+  call function 'SCMS_XSTRING_TO_BINARY'
+    exporting
+      buffer     = gv_image
+    tables
+      binary_tab = gt_tabimg.
+
+  cl_gui_frontend_services=>gui_download(
+    exporting
+      filename                  = gv_full_path
+      filetype                  = 'BIN'
+    changing
+      data_tab                  = gt_tabimg
+    exceptions
+      others                    = 99
+  ).
+
+endif.

@@ -1,0 +1,61 @@
+*&---------------------------------------------------------------------*
+*& Report Z_FIND_ITEMS
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_find_items.
+parameters: p_prog type tadir-obj_name OBLIGATORY.
+
+data: environment_selection type envi_types,
+      source_searched       type table of rsfind,
+      output_list           type table of senvi.
+
+start-of-selection.
+
+  environment_selection-prog = 'X'. "Program
+  environment_selection-fugr = 'X'. "Function group
+  environment_selection-ldba = 'X'. "Logical database
+  environment_selection-msag = 'X'. "Message class
+  environment_selection-tran = 'X'. "Transaction
+  environment_selection-func = 'X'. "Function module
+  environment_selection-dial = 'X'. "Dialog module
+  environment_selection-tabl = 'X'. "Database tables
+  environment_selection-shlp = 'X'. "Search Help
+  environment_selection-doma = 'X'. "Domain
+  environment_selection-dtel = 'X'. "Data element
+  environment_selection-view = 'X'. "View
+  environment_selection-mcob = 'X'. "Matchcode object
+  environment_selection-mcid = 'X'. "Matchcode ID
+  environment_selection-para = 'X'. "SET/GET parameters
+  environment_selection-conv = 'X'. "Conversion exit
+  environment_selection-suso = 'X'. "Authorization objects
+  environment_selection-type = 'X'. "Type groups
+  environment_selection-ttyp = 'X'. "Table types
+  environment_selection-stru = 'X'. "Structure
+  environment_selection-enqu = 'X'. "Lock object
+  environment_selection-sqlt = 'X'. "SQL tables
+  environment_selection-clas = 'X'. "Class
+  environment_selection-intf = 'X'. "Interfaces
+  environment_selection-udmo = 'X'. "Data model
+  environment_selection-ueno = 'X'. "Entity type
+  environment_selection-shi3 = 'X'. "Area menu
+  environment_selection-cntx = 'X'. "Context
+  environment_selection-ttab = 'X'. "Table types
+
+  call function 'REPOSITORY_ENVIRONMENT_SET_RFC'
+    exporting
+      obj_type          = 'PROG'
+      environment_types = environment_selection
+      object_name       = p_prog
+    tables
+      environment       = output_list
+      source_objects    = source_searched.
+*BREAK-POINT.
+  data gr_table type ref to cl_salv_table.
+  call method cl_salv_table=>factory
+    importing
+      r_salv_table = gr_table
+    changing
+      t_table      = output_list.
+
+  gr_table->display( ).

@@ -1,0 +1,21 @@
+*&---------------------------------------------------------------------*
+*& Report Z_DYNABAP_2
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT Z_DYNABAP_2.
+
+data: t_pool type table of string,
+      v_prog type          string.
+
+append: 'PROGRAM pool.'                          to t_pool,
+        'FORM test.'                             to t_pool,
+        '  WRITE / ''Run perform''.'             to t_pool,
+        '  WRITE / ''Finish perform''.'          to t_pool,
+        'ENDFORM.'                               to t_pool.
+
+generate subroutine pool t_pool name v_prog.
+
+write: 'Name of the generated program: ', v_prog.
+
+perform ('TEST') in program (v_prog) if found.

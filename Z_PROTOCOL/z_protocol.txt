@@ -1,0 +1,116 @@
+*&---------------------------------------------------------------------*
+*& Report Z_PROTOCOL
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_protocol.
+
+types: begin of t_protocol,
+         icon     type icon_d,
+         objtxt   type char70,
+         bapi_msg type bapi_msg,
+         msgty    type sy-msgty,
+       end of t_protocol.
+data gt_protocol type table of t_protocol.
+
+*&amp;---------------------------------------------------------------------*
+*&amp; Form protocol_add_message
+*&amp;---------------------------------------------------------------------*
+* add_message
+*----------------------------------------------------------------------*
+form protocol_add_message tables pt_protocol
+using objtxt result_msg type_msg.
+  data: ls_protocol type t_protocol.
+  ls_protocol-objtxt = objtxt.
+  ls_protocol-bapi_msg = result_msg.
+  ls_protocol-msgty = type_msg.
+  append ls_protocol to pt_protocol.
+
+endform. "protocol_add_message
+
+*&amp;---------------------------------------------------------------------*
+*&amp; Form protocol_show
+*&amp;---------------------------------------------------------------------*
+* show
+*----------------------------------------------------------------------*
+form protocol_show tables pt_protocol.
+  type-pools : slis.
+  data: x_fieldcat  type slis_fieldcat_alv,
+        lt_fieldcat type slis_t_fieldcat_alv with header line.
+  field-symbols : <ls_protocol> type t_protocol.
+
+  check pt_protocol[] is not initial .
+
+  loop at pt_protocol assigning <ls_protocol>.
+    if <ls_protocol>-msgty = 'I' .
+      <ls_protocol>-icon = '@5B@' .
+    elseif <ls_protocol>-msgty = 'E'.
+      <ls_protocol>-icon = '@5C@' .
+    else.
+      <ls_protocol>-icon = '@5D@' .
+    endif .
+  endloop.
+
+  clear lt_fieldcat[].
+  clear lt_fieldcat.
+  lt_fieldcat-fieldname = 'ICON'.
+  lt_fieldcat-outputlen = 4.
+  lt_fieldcat-icon = 'X'.
+  lt_fieldcat-seltext_l = 'Тип'.
+  lt_fieldcat-ref_tabname = 'GT_PROTOCOL'.
+  lt_fieldcat-col_pos = 1.
+  append lt_fieldcat.
+  clear lt_fieldcat.
+  lt_fieldcat-fieldname = 'OBJTXT'.
+  lt_fieldcat-seltext_l = 'Объект' ."(t11).
+  lt_fieldcat-ref_tabname = 'GT_PROTOCOL'.
+  lt_fieldcat-outputlen = 15.
+  lt_fieldcat-col_pos = 2.
+  append lt_fieldcat.
+  clear lt_fieldcat.
+  lt_fieldcat-fieldname = 'BAPI_MSG'.
+  lt_fieldcat-seltext_l = 'Результат обработки'." (t12).
+  lt_fieldcat-ref_tabname = 'GT_PROTOCOL'.
+  lt_fieldcat-outputlen = 75.
+  lt_fieldcat-col_pos = 3.
+  append lt_fieldcat.
+
+  call function 'REUSE_ALV_GRID_DISPLAY'
+    exporting
+      i_callback_program    = 'SAVE'
+      i_bypassing_buffer    = 'X'
+      it_fieldcat           = lt_fieldcat[]
+      i_screen_start_column = 5
+      i_screen_start_line   = 5
+      i_screen_end_column   = 100
+      i_screen_end_line     = 15
+    tables
+      t_outtab              = pt_protocol
+    exceptions
+      program_error         = 1
+      others                = 2.
+endform. " PROTOCOL_SHOW
+
+initialization.
+
+start-of-selection.
+
+  select * from zsm_t_bid into table @data(gt_bid).
+
+
+  data(result_m) = |Выполнена обработка { sy-dbcnt } записей.|.
+  data(result_t) = cond #( when sy-subrc = 0 then 'I' else 'E' ).
+
+  perform protocol_add_message
+    tables
+      gt_protocol
+    using
+      'zsm_t_bid'
+      result_m
+      result_t
+    .
+
+  perform protocol_show
+    tables
+      gt_protocol
+    .

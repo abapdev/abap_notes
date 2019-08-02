@@ -1,0 +1,44 @@
+*&---------------------------------------------------------------------*
+*& Report Z_REF
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_ref.
+*****************************************************
+write: / 'Example #1 *****************************************************'.
+*****************************************************
+data lv_var type i  value 1.
+data lv_ref type ref to i.
+get reference of lv_var into lv_ref.
+assign lv_ref->* to field-symbol(<fs_ref_to_var>).
+<fs_ref_to_var> = 2.
+write: / 'var =     ', <fs_ref_to_var>,
+       / '<fs> =    ', lv_var.
+*****************************************************
+write: / 'Example #2 *****************************************************'.
+*****************************************************
+data: lo_data type ref to i.
+create data lo_data. "анонимный объект в памяти
+if lo_data is bound.
+  assign lo_data->* to field-symbol(<fs_package>).
+  <fs_package> = 11.
+  write: / '<fs> =    ', <fs_package>.
+endif.
+*****************************************************
+write: / 'Example #3 *****************************************************'.
+*****************************************************
+field-symbols <s_package>.
+data: lo_data1 type ref to data.
+create data lo_data1 type i.
+if lo_data1 is bound.
+  assign lo_data1->* to field-symbol(<fs_package1>).
+  <fs_package1> = 22.
+  write: / '<fs> =    ', <fs_package1>.
+endif.
+
+
+data lt_bid type table of  zsm_t_bid.
+
+*zsm_t_bid
+*
+*move-corresponding lt_bid to zsm_t_bid .

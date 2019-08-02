@@ -1,0 +1,33 @@
+*&---------------------------------------------------------------------*
+*& Report Z_LOCK
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_lock.
+
+
+
+
+
+call function 'ENQUEUE_EZ_CHAO_TEST'
+* EXPORTING
+*   MODE_ZSM_FIRM_CONN       = 'E'
+*   MANDT                    = SY-MANDT
+*   BITRIX_ID                =
+*   SAP_ID                   =
+*   X_BITRIX_ID              = ' '
+*   X_SAP_ID                 = ' '
+*   _SCOPE                   = '2'
+*   _WAIT                    = ' '
+*   _COLLECT                 = ' '
+  exceptions
+    foreign_lock   = 1
+    system_failure = 2
+    others         = 3.
+
+if sy-subrc <> 0.
+  DATA(lv_text) = | unlock + { SY-MSGV1 } |.
+  write: lv_text.
+else.
+  write: 'lock'.
+endif.

@@ -1,0 +1,69 @@
+*&---------------------------------------------------------------------*
+*& Report Z_BAR
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_bar.
+"Selection screen
+SELECTION-SCREEN BEGIN OF BLOCK b01 WITH FRAME TITLE TEXT-b01.
+PARAMETERS: p_int       TYPE i DEFAULT 1000 OBLIGATORY,
+            p_buffer    TYPE i DEFAULT 25,
+            p_text(100) TYPE c DEFAULT '¬ыполн€етс€ обработка данных:' VISIBLE LENGTH 100.
+SELECTION-SCREEN END OF BLOCK b01.
+
+"Operations
+*****SELECT * FROM zsm_t_bid
+*****  INTO TABLE @DATA(lt_bid)
+*****  .
+*****LOOP AT lt_bid INTO DATA(ls_bid).
+*****  CALL FUNCTION 'Z_GUI_PROGRESS_BAR'
+*****    EXPORTING
+*****      index   = sy-tabix
+*****      maximum = lines( lt_bid ).
+*****
+*****ENDLOOP.
+DO p_int TIMES. "эмул€ци€ какого то действи€, например, loop
+
+*  PERFORM show_progress USING sy-index p_int p_buffer p_text.
+
+CALL FUNCTION 'Z_GUI_PROGRESS_BAR'
+  EXPORTING
+    index            = sy-index
+    maximum          = p_int
+    parts_size       = p_buffer
+    TEXT             = p_text
+          .
+
+  DO 50000 TIMES.
+    "эмул€ци€ задержки
+  ENDDO.
+ENDDO.
+
+"Subroutine
+FORM show_progress USING index maximum parts_size text.
+  DATA: lv_percent TYPE p. " рассчитываемый процент
+  DATA: lv_parts TYPE i. " счетчик порций
+  lv_percent = index / maximum * 100.
+  lv_parts = index MOD parts_size.
+  IF lv_parts = 0.
+    DATA lv_txt1(100) TYPE c.
+    WRITE index TO lv_txt1.
+    CONDENSE lv_txt1.
+
+    DATA lv_txt2(100) TYPE c.
+    WRITE maximum TO lv_txt2.
+    CONDENSE lv_txt2.
+
+    DATA lv_txt3(100) TYPE c.
+
+    CONCATENATE text
+      lv_txt1
+      'из'
+      lv_txt2
+      INTO lv_txt3 SEPARATED BY space.
+    CALL FUNCTION 'SAPGUI_PROGRESS_INDICATOR'
+      EXPORTING
+        percentage = lv_percent
+        text       = lv_txt3.
+  ENDIF.
+ENDFORM.

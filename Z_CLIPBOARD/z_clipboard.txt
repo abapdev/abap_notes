@@ -1,0 +1,67 @@
+*&---------------------------------------------------------------------*
+*& Report Z_CLIPBOARD
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_clipboard.
+TYPES:
+  BEGIN OF ty_data,
+    fld1 TYPE char80,
+    fld2 TYPE char80,
+    fld3 TYPE char80,
+  END   OF ty_data.
+DATA: lt_data TYPE STANDARD TABLE OF ty_data.
+FIELD-SYMBOLS: <lfs_data>  LIKE LINE OF lt_data.
+
+START-OF-SELECTION.
+
+* TO hold buffer from clipboard
+  TYPES:
+    BEGIN OF ty_clipdata,
+      data TYPE c LENGTH 500,
+    END   OF ty_clipdata.
+  DATA: lt_clipdata TYPE STANDARD TABLE OF ty_clipdata.
+  DATA: ls_clipdata LIKE LINE OF lt_clipdata.
+  DATA: lv_clip_len TYPE i.
+  CONSTANTS: c_tab  TYPE c VALUE cl_bcs_convert=>gc_tab.
+* Split data to each field
+  DATA: lt_record TYPE STANDARD TABLE OF ty_clipdata.
+  DATA: ls_record LIKE LINE OF lt_record.
+  FIELD-SYMBOLS: <lfs_field> TYPE any.
+*------------
+* Import data from Clipboard
+*------------
+  cl_gui_frontend_services=>clipboard_import(
+    IMPORTING
+       data                 = lt_clipdata
+       length               = lv_clip_len
+     EXCEPTIONS
+       cntl_error           = 1
+       error_no_gui         = 2
+       not_supported_by_gui = 3
+       OTHERS               = 4 ).
+  IF sy-subrc NE 0.
+    MESSAGE 'Error while importing data from clipboard' TYPE 'I'.
+    EXIT.
+  ENDIF.
+*---- Split data to respective field and
+*---- populate the data in table
+  LOOP AT lt_clipdata INTO ls_clipdata.
+    SPLIT ls_clipdata AT c_tab
+      INTO TABLE lt_record.
+    APPEND INITIAL LINE TO lt_data ASSIGNING <lfs_data>.
+    LOOP AT lt_record INTO ls_record.
+      ASSIGN COMPONENT sy-tabix
+        OF STRUCTURE <lfs_data> TO <lfs_field>.
+      IF sy-subrc EQ 0.
+        <lfs_field> = ls_record-data.
+      ENDIF.
+    ENDLOOP.
+  ENDLOOP.
+*
+* write it back for demo
+  LOOP AT lt_data ASSIGNING <lfs_data>.
+    WRITE: / <lfs_data>-fld1,
+             <lfs_data>-fld2,
+             <lfs_data>-fld3.
+  ENDLOOP.

@@ -1,0 +1,49 @@
+*&---------------------------------------------------------------------*
+*& Report Z_COMMAND
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_command.
+
+***data: lv_param like sxpgcolist-parameters,
+***      lv_line  type btcxpm.
+***
+***data: lt_result type table of btcxpm with empty key.
+***
+***lv_param = 'ipconfig /all'.
+***
+***call function 'SXPG_COMMAND_EXECUTE'
+***  exporting
+***    commandname                   = 'Z_CMD'
+***    additional_parameters         = lv_param
+***  tables
+***    exec_protocol                 = lt_result
+***  exceptions
+***    no_permission                 = 1
+***    command_not_found             = 2
+***    parameters_too_long           = 3
+***    security_risk                 = 4
+***    wrong_check_call_interface    = 5
+***    program_start_error           = 6
+***    program_termination_error     = 7
+***    x_error                       = 8
+***    parameter_expected            = 9
+***    too_many_parameters           = 10
+***    illegal_command               = 11
+***    wrong_asynchronous_parameters = 12
+***    cant_enq_tbtco_entry          = 13
+***    jobcount_generation_error     = 14
+***    others                        = 15.
+***if sy-subrc <> 0.
+***  break-point.
+***endif.
+***loop at lt_result into lv_line.
+***  write :/ lv_line-message.
+***endloop.
+
+call function 'WS_EXECUTE'
+  exporting
+    inform      = ''
+    program     = 'NOTEPAD'
+*    commandline = 'C:WINDOWSSYSTEM32NOTEPAD.EXE'
+.

@@ -1,0 +1,211 @@
+*&---------------------------------------------------------------------*
+*& Report ZPDF
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report zpdf.
+
+initialization.
+
+  parameters: p_pcfile like rlgrap-filename.
+  parameters: p_count type i.
+
+at selection-screen on value-request for p_pcfile.
+
+  data : f_path     type string,
+         f_pathname type string.
+
+
+  call method cl_gui_frontend_services=>directory_browse
+    changing
+      selected_folder      = f_path
+    exceptions
+      cntl_error           = 1
+      error_no_gui         = 2
+      not_supported_by_gui = 3
+      others               = 4.
+
+  if sy-subrc eq 0.
+    f_pathname = f_path.
+  endif.
+
+  p_pcfile = f_pathname.
+
+start-of-selection.
+*****************************************************************
+  data:
+    lv_funcname  type          funcname
+  .
+*****************************************************************
+  try.
+      call function 'FP_FUNCTION_MODULE_NAME'
+        exporting
+          i_name     = 'ZFORM_RN_BDO_SU10'
+        importing
+          e_funcname = lv_funcname.
+    catch cx_fp_api_usage.
+    catch cx_fp_api_internal.
+    catch cx_fp_api_repository.
+
+  endtry.
+
+
+*****************************************************************
+  data:
+    ls_param     type          sfpoutputparams
+  .
+
+  ls_param-getpdf  = abap_true.
+  ls_param-nodialog = abap_true.
+
+  call function 'FP_JOB_OPEN'
+    changing
+      ie_outputparams = ls_param
+    exceptions
+      cancel          = 1
+      usage_error     = 2
+      system_error    = 3
+      internal_error  = 4
+      others          = 5.
+  if sy-subrc <> 0.
+    message 'Error job open' type 'E'.
+    return.
+  endif.
+*****************************************************************
+  data:
+    ls_pdf_param type    sfpdocparams,
+    ls_out       type    fpformoutput
+    .
+  data:
+    ls_su10       type   zrn_s_form_su10,
+    ls_su10_table type line of zrn_tt_form_su10_table,
+    lt_su10       type zrn_tt_form_su10_table
+    .
+
+  ls_su10-p1 = 'p1'.
+  ls_su10-p2 = 'p2'.
+  ls_su10-p3 = 'p3'.
+  ls_su10-p4 = 'p4'.
+  ls_su10-p5 = 'p5'.
+  ls_su10-p6 = 'p6'.
+  ls_su10-p7 = 'p7'.
+  ls_su10-p8 = 'p8'.
+  ls_su10-p9 = 'p9'.
+  ls_su10-p10 = 'p10'.
+  ls_su10-p11 = 'p11'.
+  ls_su10-p12 = 'p12'.
+  ls_su10-p13 = 'p13'.
+  ls_su10-p14 = 'p14'.
+  ls_su10-p31 = 'p31'.
+  ls_su10-p32 = 'p32'.
+  ls_su10-p33 = 'p33'.
+  ls_su10-p34 = 'p34'.
+
+  ls_su10_table-p15 = 'p15'.
+  ls_su10_table-p16 = 'p16'.
+  ls_su10_table-p17 = 'p17'.
+  ls_su10_table-p18 = 'p18'.
+  ls_su10_table-p19 = 'p19'.
+  ls_su10_table-p20 = 'p20'.
+  ls_su10_table-p21 = 'p21'.
+  ls_su10_table-p22 = 'p22'.
+  ls_su10_table-p23 = 'p23'.
+  ls_su10_table-p24 = 'p24'.
+  ls_su10_table-p25 = 'p25'.
+  ls_su10_table-p25 = 'p26'.
+
+  do p_count times.
+    append ls_su10_table to lt_su10.
+  enddo.
+
+
+
+
+
+  call function lv_funcname
+    exporting
+      /1bcdwb/docparams  = ls_pdf_param
+      form_su10          = ls_su10
+      form_su10_data     = lt_su10
+    importing
+      /1bcdwb/formoutput = ls_out
+    exceptions
+      usage_error        = 1
+      system_error       = 2
+      internal_error     = 3
+      others             = 4.
+  if sy-subrc <> 0.
+    message 'Error generating pdf!' type 'E'.
+    return.
+  endif.
+*****************************************************************
+  call function 'FP_JOB_CLOSE'
+    exceptions
+      usage_error    = 1
+      system_error   = 2
+      internal_error = 3
+      others         = 4.
+  if sy-subrc <> 0.
+    message 'Error job close' type 'E'.
+    return.
+  endif.
+*****************************************************************
+  data:
+    lv_content  type xstring,
+    lv_filesize type i,
+    lv_filename type string
+    .
+  data : begin of lt_data occurs 0,
+           line type x length 255,
+         end of lt_data.
+
+
+  lv_content = ls_out-pdf.
+
+  call function 'SCMS_XSTRING_TO_BINARY'
+    exporting
+      buffer        = lv_content
+    importing
+      output_length = lv_filesize
+    tables
+      binary_tab    = lt_data.
+
+  lv_filename = |{ p_pcfile }\\M4.pdf|.
+
+  call function 'GUI_DOWNLOAD'
+    exporting
+      bin_filesize            = lv_filesize
+      filename                = lv_filename
+      filetype                = 'BIN'
+    tables
+      data_tab                = lt_data
+    exceptions
+      file_write_error        = 1
+      no_batch                = 2
+      gui_refuse_filetransfer = 3
+      invalid_type            = 4
+      no_authority            = 5
+      unknown_error           = 6
+      header_not_allowed      = 7
+      separator_not_allowed   = 8
+      filesize_not_allowed    = 9
+      header_too_long         = 10
+      dp_error_create         = 11
+      dp_error_send           = 12
+      dp_error_write          = 13
+      unknown_dp_error        = 14
+      access_denied           = 15
+      dp_out_of_memory        = 16
+      disk_full               = 17
+      dp_timeout              = 18
+      file_not_found          = 19
+      dataprovider_exception  = 20
+      control_flush_error     = 21
+      others                  = 22.
+
+  if sy-subrc ne 0.
+    write : / 'Error downloading File to PC Path : ', lv_filename.
+    stop.
+  else.
+    write : / 'File downloaded to PC Path : ', lv_filename.
+  endif.

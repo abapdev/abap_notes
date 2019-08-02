@@ -1,0 +1,27 @@
+*&---------------------------------------------------------------------*
+*& Report Z_DYNABAP
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_dynabap.
+
+data: gv_classname type seoclsname.
+data: gob_object type ref to object.
+data: gr_error type ref to cx_dynamic_check.
+data: gv_message type string.
+
+gv_classname = 'CL_GUI_ALV_GRID'.
+
+try .
+
+    create object gob_object type (gv_classname).
+
+  catch cx_sy_create_object_error into gr_error.
+    gv_message = gr_error->get_text( ).
+    write :/1 gv_message.
+
+  catch cx_sy_dyn_call_param_missing into gr_error.
+    gv_message = gr_error->get_text( ).
+    write :/1 gv_message.
+
+endtry.

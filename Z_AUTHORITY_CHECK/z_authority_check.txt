@@ -1,0 +1,25 @@
+*&---------------------------------------------------------------------*
+*& Report Z_AUTHORITY_CHECK
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_authority_check.
+selection-screen begin of block b1 with frame title text-b01.
+parameters: p_first  RADIOBUTTON GROUP gr01,
+            p_second RADIOBUTTON GROUP gr01.
+selection-screen end of block b1.
+
+
+at selection-screen.
+
+  case abap_true.
+    when p_first.
+      authority-check object 'ZCHAO_TEST'  id 'ACTVT' field '16'.
+    when p_second.
+      authority-check object 'ZCHAO_TEST'  id 'ACTVT' field '5'.
+  endcase.
+
+  if sy-subrc <> 0.
+    message 'No permissions' type 'W'.
+  endif.
+  message 'Success!' type 'S'.

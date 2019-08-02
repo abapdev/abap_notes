@@ -1,0 +1,289 @@
+**&---------------------------------------------------------------------*
+**& Report Z_ABAP740
+**&---------------------------------------------------------------------*
+**&
+**&---------------------------------------------------------------------*
+report z_abap740.
+
+**************************************************************
+"Оператор VALUE
+
+*Пример №1. Несколько способов инициализации структур
+types: begin of t_col2,
+         col1 type i,
+         col2 type i,
+       end of t_col2.
+types: begin of t_struct,
+         col1 type i,
+         col2 type t_col2,
+       end of t_struct.
+data: struct type t_struct,
+      col2   type t_col2.
+*“1
+struct = value t_struct( col1 = 1
+                         col2-col1 = 1
+                         col2-col2 = 2 ).
+*“2
+col2   = value t_col2( col1 = 1
+                         col2 = 2 ).
+struct = value t_struct( col1 = 1
+                         col2 = col2 ).
+*“3
+struct = value t_struct( col1 = 1
+                         col2 = value #( col1 = 1
+                                         col2 = 2 ) ).
+
+data(ls_project) = value zsm_s_project(  ).
+data(ls_creg) = value zsm_s_creg_hist( result_amount = 1 ).
+
+
+*Пример №2. Инициализации внутренних таблиц
+types t_itab type table of i with empty key.
+data itab type t_itab.
+itab = value #( ( ) ( 1 ) ( 2 ) ).
+data itab1 type range of i.
+itab1 = value #( sign = 'I'  option = 'BT' ( low = 1  high = 10 )
+                                          ( low = 21 high = 30 )
+                                          ( low = 41 high = 50 )
+                            option = 'GE' ( low = 61 )  ).
+
+
+**************************************************************
+*Оператор FOR
+
+*пример №4. копирование данных при создании таблицы из другой внутренней таблицы
+types:
+  begin of ty_customer,
+    customer type char10,
+    name     type char30,
+    city     type char30,
+    route    type char10,
+  end   of ty_customer.
+types: tt_customers type sorted table of ty_customer
+          with unique key customer.
+
+types: tt_citys type standard table of char30 with empty key.
+
+data(t_customres) =
+  value tt_customers(
+    ( customer = 'C0001' name = 'Test Customer 1' city = 'NY' route = 'R0001' )
+    ( customer = 'C0002' name = 'Customer 2'      city = 'LA' route = 'R0003' )
+    ( customer = 'C0003' name = 'Good Customer 3' city = 'DFW' route = 'R0001' )
+    ( customer = 'C0004' name = 'Best Customer 4' city = 'CH' route = 'R0003' )
+  ).
+
+* FOR to get the column CITY
+data(t_city) =
+  value tt_citys(
+    for ls_cust in t_customres
+    ( ls_cust-city )
+  ).
+
+*Пример №5. Использование WHERE условий в операторе FOR
+data(t_city_in_03) =
+  value tt_citys(
+    for ls_cust in t_customres where ( route = 'R0001' )
+    ( ls_cust-city )
+  ).
+
+
+select bid_id, bid_name from zsm_t_bid into table @data(gt_bid).
+
+types: begin of ts_bid,
+         bid_id   type zsm_e_bid_id,
+         bid_name type zsm_e_bid_name,
+       end of ts_bid.
+types: tt_bid_name type standard table of ts_bid with empty key.
+
+data(lt_bid_forin) =
+     value tt_bid_name(
+        for ls_bid in gt_bid where ( bid_name is not initial )
+            ( ls_bid )
+            ).
+
+
+******************************************************
+*TABLE EXPRESSIONS
+
+*Пример №7. Чтение таблицы по индексу
+
+data: t_data type standard table of i.
+
+do 10 times.
+  append sy-index to t_data.
+enddo.
+
+*Старый способ
+data: lv_data type i.
+do 12 times.
+  read table t_data into lv_data with key table_line = sy-index.
+  if sy-subrc eq 0.
+    write: / lv_data.
+  else.
+    write: / 'Not Found', sy-index.
+  endif.
+enddo.
+
+* Новый способ
+do 12 times.
+  try .
+      write: / t_data[ table_line = sy-index ].
+    catch cx_sy_itab_line_not_found.
+      write: / 'Not found', sy-index.
+  endtry.
+enddo.
+
+select * from zsm_t_bid into table @data(lt_new_bid).
+do lines( lt_new_bid ) times.
+  try .
+      data(ls_bid_first) = lt_new_bid[ sy-index ].
+*    write: / ls_bid_first.
+    catch cx_sy_itab_line_not_found.
+      write: / 'Not found'.
+  endtry.
+enddo.
+
+*Пример №8. Запись значений компонента в таблицу по индексу
+* Старый вариант
+field-symbols: <lfs_data> like line of t_data.
+read table t_data assigning <lfs_data> with key table_line = 10.
+if sy-subrc eq 0.
+  <lfs_data> = 20.
+endif.
+
+* Новый вариант
+try .
+    t_data[ table_line = 1 ] = 20.
+    t_data[ table_line = 20 ] = 10.
+  catch cx_sy_itab_line_not_found.
+    write: / 'Not found'.
+endtry.
+
+*Пример №9. Поиск и выдача данных из таблицы с использованием ключа, без какой-либо рабочей области
+
+types:
+  begin of ty_data,
+    kunnr type kunnr,
+    name1 type name1,
+    ort01 type ort01,
+    land1 type land1,
+  end   of ty_data.
+types: tt_data type standard table of ty_data
+                                        with default key.
+*
+data(itab_multi_comp) =
+  value tt_data( ( kunnr = '123' name1 = 'ABCD' ort01 = 'LV' land1 = 'NV' )
+                 ( kunnr = '456' name1 = 'XYZ'  ort01 = 'LA' land1 = 'CA' )
+              ).
+
+* Старый метод доступа
+data ls_comp type ty_data.
+read table itab_multi_comp into data(lv_ort) with key kunnr = '123' transporting ort01.
+write: / lv_ort.
+
+* Новый метод доступа
+write: / itab_multi_comp[ kunnr = '123' ]-ort01.
+
+
+data: itab_find    type table of string.
+find all occurrences of regex '\b(Huey|Dewey|Louie)\b'
+  in table itab_find
+  respecting case
+  results data(results).
+
+*****************************************************************************
+*COND
+
+*COND <type>(
+*    WHEN <condition> THEN <value>
+*    ...
+*    [ ELSE <default> | throw <exception> ]
+*).
+data(lv_flag) = 1.
+data(lv_flag_invers) = cond flag( when lv_flag = 1 then 0
+                                 else 1 ).
+parameters p_radio type flag.
+parameters p_check type flag as checkbox.
+loop at screen.
+  case screen-name.
+    when 'P_CHECK'.
+      screen-active = cond i(
+          when p_radio = abap_true then 1 ).
+  endcase.
+  modify screen.
+endloop.
+
+data: op1, op2 type i.
+op1 = 1.
+op2 = 2.
+data(rw_compare) = cond #(
+    when op1 < op2 then 'LT'
+    when op1 = op2 then 'EQ'
+    when op1 > op2 then 'GT'
+).
+
+
+*SWITCH
+*SWITCH <type>(
+*    <variable>
+*    WHEN <value> THEN <new_value>
+*    ...
+*    [ ELSE <default> | throw <exception> ]
+*).
+
+data(lv_language) = switch string( sy-langu
+    when 'E' then 'English'
+    when 'D' then 'German'
+    when 'R' then 'Russian'
+    " ...
+    else throw cx_sy_conversion_unknown_langu( )
+).
+write: / lv_language.
+
+*REDUCE
+data itab2 type sorted table of i with non-unique key table_line.
+itab2 = value #( base itab for j = 1 while j <= 10 ( j ) ).
+
+data(sum) = reduce i( init x = 0 for wa in itab2 next x = x + wa ).
+
+*****************************************************************************
+*FILTER
+*data lt_bid_filter type sorted table of zsm_t_bid with unique key bid_id.
+*select * from zsm_t_bid into table lt_bid_filter.
+*data lv_date type datum value 01012019.
+*data(lt_result) = filter #( lt_bid_filter
+*              where begda > lv_date ).
+
+*****************************************************************************
+* CASE IN SELECT
+*select c~workdate, p~pernr, p~usrid as uname,
+*  case
+*    when workdate eq '01' or workdate eq '02' or workdate eq  '03' then ''
+*   end as workdate
+*    into table @data(lt_users)
+*    from catsdb as c
+*   inner join pa0105 as p on c~pernr = p~pernr
+*  where c~zzcounter = '000000023337'  and p~subty in ('0001')
+*  .
+
+
+
+data lt_bid type table of zsm_t_bid with empty key.
+
+select * from  zsm_t_bid
+         into table @lt_bid.
+
+data lt_bid_new like lt_bid.
+
+loop at lt_bid into data(ls_bid_iterator)  group by ( project_id = ls_bid_iterator-project_id )  ascending
+                                                          assigning field-symbol(<fs_group>).
+  clear lt_bid_new.
+
+  loop at group <fs_group> assigning field-symbol(<fs_bid>).
+    lt_bid_new = value #( base lt_bid_new ( <fs_bid> ) ).
+  endloop.
+
+  cl_demo_output=>write( lt_bid_new ).
+endloop.
+cl_demo_output=>display( ).
+*BREAK-POINT.

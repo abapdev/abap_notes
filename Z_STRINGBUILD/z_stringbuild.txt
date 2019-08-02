@@ -1,0 +1,68 @@
+*&---------------------------------------------------------------------*
+*& Report Z_STRINGBUILD
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_stringbuild.
+
+write: / 'split'.
+DATA STR(30) VALUE 'SAP IS AN ERP'.
+DATA: S1(5), S2(5), S3(5), S4(5).
+SPLIT STR AT ' ' INTO S1 S2 S3 S4.
+WRITE :/ S1, / S2, / S3, / S4.
+write: / '************************************************************'.
+write: / 'search'.
+DATA STR1(30) VALUE 'SAP IS AN ERP'.
+DATA S11(3) VALUE 'AN'.
+SEARCH STR1 FOR S11.
+WRITE :/ SY-FDPOS. " is the system variable used to hold the position of an alphabet in the string.
+write: / '************************************************************'.
+write: / 'concatenate'.
+DATA STR2(30).
+DATA: S12(5) VALUE 'INDIA', S22(5) VALUE 'IS', S32(5) VALUE 'GREAT'.
+CONCATENATE S12 S22 S32 INTO STR2 SEPARATED BY ' '.
+WRITE :/ STR2.
+write: / '************************************************************'.
+write: / 'shift'.
+DATA STR3(20) VALUE 'ABAP IS IN SAP'.
+SHIFT STR3 BY 5 PLACES.
+WRITE :/ STR3 COLOR 5.
+DATA STR4(20) VALUE 'ABAP IS IN SAP'.
+SHIFT STR4 RIGHT BY 5 PLACES.
+WRITE :/ STR4 COLOR 5.
+DATA STR5(20) VALUE 'ABAP IS IN SAP'.
+SHIFT STR5 CIRCULAR BY 5 PLACES.
+WRITE :/ STR5 COLOR 5.
+write: / '************************************************************'.
+write: / 'to lower case'.
+DATA STR6(10) VALUE 'CHENNAI'.
+TRANSLATE STR6 TO LOWER CASE.
+WRITE :/ STR6.
+write: / '************************************************************'.
+write: / 'condense'.
+data str7(30) value ' INDIA IS GREAT'.
+CONDENSE STR7.
+WRITE :/ STR7.
+write: / '************************************************************'.
+write: / 'replace'.
+data str8(30) value 'INDIA IS GREAT'.
+DATA S18(10) VALUE 'WRITE'.
+REPLACE 'IS' IN STR8 WITH S18.
+WRITE :/ STR8.
+write: / '************************************************************'.
+write: / 'strlen'.
+data str9(30) value 'INDIA IS GREAT'.
+data len type i.
+len = STRLEN( STR9 ).
+write :/ len.
+write: / '************************************************************'.
+data lv_status          type char15.
+lv_status = '1/'.
+write: / 'lv_status = ', lv_status.
+lv_status = |{ lv_status }2        /|.
+write: / 'lv_status + 2        / = ', lv_status.
+condense lv_status no-gaps.
+write: / 'condense lv_status = ', lv_status.
+shift lv_status right deleting trailing ''.
+shift lv_status right deleting trailing '/'.
+write: / 'shift lv_status right deleting trailing / = ', lv_status.
