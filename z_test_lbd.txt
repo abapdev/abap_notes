@@ -1,0 +1,51 @@
+*&---------------------------------------------------------------------*
+*& Report Z_TEST_LBD
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report z_test_lbd.
+
+* LBD name 	- PNP
+* report class  - HRCHDTPK
+
+types: begin of ts_name_email,
+         login type persno,
+         name  type emnam,
+         email type comm_id_long,
+       end of ts_name_email.
+
+data: lt_name_email type table of ts_name_email,
+      ls_name_email type ts_name_email.
+
+
+tables: pernr.
+infotypes: 0000,
+           0001,
+           0105
+           .
+
+start-of-selection.
+
+  clear ls_name_email.
+
+  get pernr.
+  check lines( p0105 ) gt 0.
+
+  loop at p0105 assigning field-symbol(<fs_p0105>) where subty = '0010'.
+    check <fs_p0105>-usrid_long is not initial.
+    read table p0001 assigning field-symbol(<fs_p0001>).
+    lt_name_email = value #( base lt_name_email
+                           ( login = <fs_p0105>-pernr
+                              name = <fs_p0001>-ename
+                             email = <fs_p0105>-usrid_long )  ).
+  endloop.
+
+end-of-selection.
+"output result
+  cl_salv_table=>factory(
+    importing
+      r_salv_table   = data(r_salv_table)
+    changing
+      t_table        = lt_name_email
+  ).
+  r_salv_table->display( ).
